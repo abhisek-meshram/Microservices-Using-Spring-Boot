@@ -1,0 +1,116 @@
+server:
+  port: 8081
+spring:
+
+#service registry app name
+  application:
+    name: USER-SERVICE
+
+  #jpa database mysql config
+  datasource:
+    url: jdbc:mysql://127.0.0.1:3307/microservices
+    username: root
+    password: mysql
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:dialect: org.hibernate.dialect.MySQL8Dialect
+
+#remote config configuration from git
+  config:
+    import: optional:configserver:http://localhost:8085
+
+#okta security
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: https://dev-24387076.okta.com/oauth2/default
+      client:
+        registration:
+          my-internal-client:
+            provider: okta
+            authorizationGrantType: client_credentials
+            scope: internal
+            clientId: 0oa8w4uvxwhVhLh525d7
+            clientSecret: qOemIu9qDnJ-CGBgTJbBOnL0Esd-ayUxOHyw1EmX
+
+        provider:
+          okta:
+            issuerUri: https://dev-24387076.okta.com/oauth2/default
+
+
+
+
+#  profiles:
+#    active: prod
+
+# spring.config.import = http://localhost:8085
+
+#below code commented as we use config server for configurations
+# eureka server enable configurations
+#eureka:
+#  instance:
+#    prefer-ip-address: true
+#  client:
+#    fetch-registry: true
+#    register-with-eureka: true
+#    service-url:
+#      defaultZone: http://localhost:8761/eureka
+
+
+# actuator configurations
+management:
+  health:
+    circuitbreakers:
+      enabled: true
+
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: always
+
+#resilience yml based configuration
+#read more in resilience4j documentation
+resilience4j:
+  circuitbreaker:
+    instances:
+      ratingHotelBreaker:
+        registerHealthIndicator: true
+        eventConsumerBufferSize: 10
+        failureRateThreshold: 50
+        minimumNumberOfCalls: 5
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+        waitDurationInOpenState: 6s
+        permittedNumberOfCallsInHalfOpenState: 3
+        slidingWindowSize: 10
+        slidingWindowType: COUNT_BASED
+
+#retry of resilience 4j
+  retry:
+    instances:
+      ratingHotelService:
+        max-attempts: 3
+        wait-duration: 5s
+
+#rateLimiter of resilience 4j
+
+  ratelimiter:
+    instances:
+      userRateLimiter:
+        limit-refresh-period: 4s
+        limit-for-period: 4
+        timeout-duration: 0s
+
+#Spring Security with okta
+
+okta:
+  oauth2:
+    issuer: https://dev-24387076.okta.com/oauth2/default
+    audience: api://default
